@@ -189,3 +189,29 @@ The earlier version persisted the task collection in browser localStorage. The U
 ## License
 
 MIT
+
+## Screenshots
+Create New Account
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/0800a9d6-0705-4187-b363-3c8a158a41ad" />
+
+Login
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/de6b7447-7db1-4a82-9310-e82b0b83e43d" />
+
+Homepage
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/e2d06b27-89f3-4a62-b8e2-9f4c6bdb48f2" />
+
+Add Task
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/31b75935-bfe8-4705-beba-46d6fed11c32" />
+
+Kanban Board
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/063c070b-329e-43f5-b331-7cd130f933e8" />
+
+Calender
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/f333d30e-ff67-4a16-97ed-ea0a18e7e672" />
+
+DarkMode
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/df38fd13-2ffd-4964-9f3c-5ad098e4bff3" />
+
+
+
+
