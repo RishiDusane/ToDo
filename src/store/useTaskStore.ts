@@ -1,23 +1,6 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { categoryApi, taskApi } from '../api/client'
 import type { Status, Task, TaskFilters, ViewMode } from '../types'
-
-const starterTasks: Task[] = [
-  {
-    id: 'welcome-task',
-    title: 'Make this planner yours',
-    description: 'Try changing the status, adding a checklist, or moving this task on the board.',
-    dueDate: new Date(Date.now() + 86400000).toISOString(),
-    priority: 'medium',
-    category: 'Personal',
-    status: 'todo',
-    subtasks: [
-      { id: 'welcome-subtask-1', title: 'Explore the list view', completed: true },
-      { id: 'welcome-subtask-2', title: 'Try the Kanban board', completed: false },
-    ],
-    createdAt: new Date().toISOString(),
-  },
-]
 
 interface TaskStore {
   tasks: Task[]
@@ -25,67 +8,56 @@ interface TaskStore {
   filters: TaskFilters
   view: ViewMode
   theme: 'light' | 'dark'
+  loading: boolean
+  error: string | null
   editingTaskId: string | null
-  addTask: (task: Omit<Task, 'id' | 'createdAt'>) => void
-  updateTask: (id: string, updates: Partial<Task>) => void
-  deleteTask: (id: string) => void
-  setStatus: (id: string, status: Status) => void
+  fetchTasks: () => Promise<void>
+  addTask: (task: Omit<Task, 'id' | 'createdAt'>) => Promise<void>
+  updateTask: (id: string, updates: Partial<Task>) => Promise<void>
+  deleteTask: (id: string) => Promise<void>
+  setStatus: (id: string, status: Status) => Promise<void>
   setFilters: (filters: Partial<TaskFilters>) => void
   setView: (view: ViewMode) => void
   setTheme: (theme: 'light' | 'dark') => void
   setEditingTaskId: (id: string | null) => void
-  addCategory: (category: string) => void
-  replaceTasks: (tasks: Task[]) => void
+  importTasks: (tasks: Task[]) => Promise<void>
 }
 
-const defaultFilters: TaskFilters = {
-  search: '',
-  priority: 'all',
-  status: 'all',
-  category: 'all',
-  overdue: false,
-  sort: 'dueDate',
-}
+const defaultFilters: TaskFilters = { search: '', priority: 'all', status: 'all', category: 'all', overdue: false, sort: 'dueDate' }
+function errorMessage(error: unknown) { return error instanceof Error ? error.message : 'Unable to reach the TaskFlow API' }
 
-export const useTaskStore = create<TaskStore>()(
-  persist(
-    (set) => ({
-      tasks: starterTasks,
-      categories: ['Study', 'Assignment', 'Personal', 'Exam'],
-      filters: defaultFilters,
-      view: 'list',
-      theme: 'light',
-      editingTaskId: null,
-      addTask: (task) => set((state) => ({
-        tasks: [{ ...task, id: crypto.randomUUID(), createdAt: new Date().toISOString() }, ...state.tasks],
-        categories: task.category && !state.categories.includes(task.category)
-          ? [...state.categories, task.category]
-          : state.categories,
-      })),
-      updateTask: (id, updates) => set((state) => ({
-        tasks: state.tasks.map((task) => task.id === id ? { ...task, ...updates } : task),
-        categories: updates.category && !state.categories.includes(updates.category)
-          ? [...state.categories, updates.category]
-          : state.categories,
-      })),
-      deleteTask: (id) => set((state) => ({ tasks: state.tasks.filter((task) => task.id !== id) })),
-      setStatus: (id, status) => set((state) => ({
-        tasks: state.tasks.map((task) => task.id === id
-          ? { ...task, status, completedAt: status === 'done' ? new Date().toISOString() : undefined }
-          : task),
-      })),
-      setFilters: (filters) => set((state) => ({ filters: { ...state.filters, ...filters } })),
-      setView: (view) => set({ view }),
-      setTheme: (theme) => set({ theme }),
-      setEditingTaskId: (editingTaskId) => set({ editingTaskId }),
-      addCategory: (category) => set((state) => state.categories.includes(category)
-        ? state
-        : { categories: [...state.categories, category] }),
-      replaceTasks: (tasks) => set({ tasks }),
-    }),
-    {
-      name: 'taskflow-storage',
-      partialize: (state) => ({ tasks: state.tasks, categories: state.categories, filters: state.filters, theme: state.theme }),
-    },
-  ),
-)
+export const useTaskStore = create<TaskStore>((set) => ({
+  tasks: [], categories: [], filters: defaultFilters, view: 'list', theme: 'light', loading: false, error: null, editingTaskId: null,
+  fetchTasks: async () => {
+    try { set({ loading: true, error: null }); const [taskResult, categoryResult] = await Promise.all([taskApi.list(), categoryApi.list()]); set({ tasks: taskResult.tasks, categories: categoryResult.categories.map((category) => category.name), loading: false }) } catch (error) { set({ loading: false, error: errorMessage(error) }) }
+  },
+  addTask: async (task) => {
+    try { set({ error: null }); const result = await taskApi.create(task); set((state) => ({ tasks: [result.task, ...state.tasks], categories: task.category && !state.categories.includes(task.category) ? [...state.categories, task.category] : state.categories })) } catch (error) { set({ error: errorMessage(error) }); throw error }
+  },
+  updateTask: async (id, updates) => {
+    try { set({ error: null }); const result = await taskApi.update(id, updates); set((state) => ({ tasks: state.tasks.map((task) => task.id === id ? result.task : task) })) } catch (error) { set({ error: errorMessage(error) }); throw error }
+  },
+  deleteTask: async (id) => {
+    try { await taskApi.remove(id); set((state) => ({ tasks: state.tasks.filter((task) => task.id !== id) })) } catch (error) { set({ error: errorMessage(error) }); throw error }
+  },
+  setStatus: async (id, status) => {
+    try { const result = await taskApi.status(id, status); set((state) => ({ tasks: state.tasks.map((task) => task.id === id ? result.task : task) })) } catch (error) { set({ error: errorMessage(error) }); throw error }
+  },
+  setFilters: (filters) => set((state) => ({ filters: { ...state.filters, ...filters } })),
+  setView: (view) => set({ view }),
+  setTheme: (theme) => { localStorage.setItem('taskflow-theme', theme); set({ theme }) },
+  setEditingTaskId: (editingTaskId) => set({ editingTaskId }),
+  importTasks: async (tasks) => {
+    try {
+      const createdTasks: Task[] = []
+      for (const task of tasks) {
+        const result = await taskApi.create(task)
+        createdTasks.push(result.task)
+      }
+      set({ tasks: createdTasks, error: null })
+    } catch (error) {
+      set({ error: errorMessage(error) })
+      throw error
+    }
+  },
+}))

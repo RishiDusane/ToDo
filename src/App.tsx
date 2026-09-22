@@ -1,5 +1,5 @@
-import { FileDown, ListFilter, Plus, Search, SlidersHorizontal } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { ListFilter, Plus, Search, SlidersHorizontal } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 import type { ChangeEvent } from 'react'
 import { useTaskStore } from './store/useTaskStore'
 import CalendarView from './components/CalendarView'
@@ -7,8 +7,11 @@ import KanbanBoard from './components/KanbanBoard'
 import Sidebar from './components/Sidebar'
 import TaskCard from './components/TaskCard'
 import TaskForm from './components/TaskForm'
+import AuthPage from './components/AuthPage'
+import LoadingState from './components/LoadingState'
 import { dueGroup, isOverdue, toDate } from './utils/date'
 import type { Status, Task } from './types'
+import { useAuthStore } from './store/useAuthStore'
 
 const priorityRank = { high: 0, medium: 1, low: 2 }
 const groupOrder = ['Today', 'Tomorrow', 'This Week', 'Later', 'No Date']
@@ -31,7 +34,8 @@ function getVisibleTasks(tasks: Task[], filters: ReturnType<typeof useTaskStore.
   })
 }
 
-function App() {
+function PlannerApp() {
+  const logout = useAuthStore((state) => state.logout)
   const tasks = useTaskStore((state) => state.tasks)
   const categories = useTaskStore((state) => state.categories)
   const filters = useTaskStore((state) => state.filters)
@@ -40,9 +44,11 @@ function App() {
   const editingTaskId = useTaskStore((state) => state.editingTaskId)
   const setFilters = useTaskStore((state) => state.setFilters)
   const setEditingTaskId = useTaskStore((state) => state.setEditingTaskId)
-  const replaceTasks = useTaskStore((state) => state.replaceTasks)
+  const fetchTasks = useTaskStore((state) => state.fetchTasks)
+  const importTasksFromApi = useTaskStore((state) => state.importTasks)
+  const loading = useTaskStore((state) => state.loading)
+  const error = useTaskStore((state) => state.error)
   const [showFilters, setShowFilters] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
   const visibleTasks = useMemo(() => getVisibleTasks(tasks, filters), [tasks, filters])
   const editingTask = tasks.find((task) => task.id === editingTaskId)
   const activeTasks = tasks.filter((task) => task.status !== 'done').length
@@ -51,6 +57,8 @@ function App() {
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark')
   }, [theme])
+
+  useEffect(() => { void fetchTasks() }, [fetchTasks])
 
   function exportTasks() {
     const blob = new Blob([JSON.stringify(tasks, null, 2)], { type: 'application/json' })
@@ -70,7 +78,7 @@ function App() {
       try {
         const parsed: unknown = JSON.parse(String(reader.result))
         if (!Array.isArray(parsed) || !parsed.every((task) => typeof task === 'object' && task !== null && 'id' in task && 'title' in task)) throw new Error('Invalid task file')
-        replaceTasks(parsed as Task[])
+        void importTasksFromApi(parsed as Task[])
       } catch {
         window.alert('That file does not contain a valid TaskFlow export.')
       }
@@ -85,7 +93,17 @@ function App() {
     return <div className="task-groups">{groups.map(({ group, tasks: groupedTasks }) => <section key={group} className="task-group"><div className="group-heading"><h3>{group}</h3><span>{groupedTasks.length}</span></div>{groupedTasks.map((task) => <TaskCard key={task.id} task={task} />)}</section>)}</div>
   }
 
-  return <div className="app-layout"><Sidebar tasks={tasks} onNewTask={() => setEditingTaskId('new')} onExport={exportTasks} onImport={importTasks} /><main className="main-content"><header className="topbar"><div><p className="eyebrow">Tuesday, September 22</p><h1>Good morning, Rishi.</h1><p className="page-subtitle">A little focus goes a long way.</p></div><div className="header-actions"><span className="active-count"><strong>{activeTasks}</strong> active</span><button className="button primary mobile-new" onClick={() => setEditingTaskId('new')}><Plus size={17} />New task</button></div></header><section className="stats-row"><div><span className="stat-label">All tasks</span><strong>{tasks.length}</strong></div><div><span className="stat-label">Due today</span><strong>{tasks.filter((task) => dueGroup(task) === 'Today').length}</strong></div><div className={overdueTasks ? 'stat-alert' : ''}><span className="stat-label">Overdue</span><strong>{overdueTasks}</strong></div><div><span className="stat-label">Completed</span><strong>{tasks.filter((task) => task.status === 'done').length}</strong></div></section><section className="workspace"><div className="workspace-toolbar"><div className="view-title"><h2>{view === 'list' ? 'Your tasks' : view === 'board' ? 'Kanban board' : 'Calendar'}</h2><span>{visibleTasks.length} showing</span></div>{view !== 'calendar' && <div className="toolbar-actions"><label className="search-box"><Search size={17} /><input value={filters.search} onChange={(event) => setFilters({ search: event.target.value })} placeholder="Search tasks..." /></label><button className={`toolbar-button ${showFilters ? 'selected' : ''}`} onClick={() => setShowFilters(!showFilters)}><SlidersHorizontal size={17} />Filters</button></div>}</div>{showFilters && <div className="filter-panel"><label>Priority<select value={filters.priority} onChange={(event) => setFilters({ priority: event.target.value as typeof filters.priority })}><option value="all">Any priority</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select></label><label>Status<select value={filters.status} onChange={(event) => setFilters({ status: event.target.value as Status | 'all' })}><option value="all">Any status</option><option value="todo">To Do</option><option value="progress">In Progress</option><option value="done">Done</option></select></label><label>Category<select value={filters.category} onChange={(event) => setFilters({ category: event.target.value })}><option value="all">Any category</option>{categories.map((category) => <option key={category} value={category}>{category}</option>)}</select></label><label>Sort<select value={filters.sort} onChange={(event) => setFilters({ sort: event.target.value as typeof filters.sort })}><option value="dueDate">Due date</option><option value="priority">Priority</option><option value="createdAt">Recently created</option></select></label><label className="checkbox-filter"><input type="checkbox" checked={filters.overdue} onChange={(event) => setFilters({ overdue: event.target.checked })} />Overdue only</label></div>}{view === 'list' && renderList()}{view === 'board' && <KanbanBoard tasks={visibleTasks} />}{view === 'calendar' && <CalendarView tasks={visibleTasks} />}</section></main>{editingTaskId && <TaskForm task={editingTaskId === 'new' ? undefined : editingTask} onClose={() => setEditingTaskId(null)} />}<input ref={fileInputRef} type="file" hidden /></div>
+  return <div className="app-layout"><Sidebar tasks={tasks} onNewTask={() => setEditingTaskId('new')} onExport={exportTasks} onImport={importTasks} onLogout={logout} /><main className="main-content"><header className="topbar"><div><p className="eyebrow">Tuesday, September 22</p><h1>Good morning, Rishi.</h1><p className="page-subtitle">A little focus goes a long way.</p></div><div className="header-actions"><span className="active-count"><strong>{activeTasks}</strong> active</span><button className="button primary mobile-new" onClick={() => setEditingTaskId('new')}><Plus size={17} />New task</button></div></header>{error && <div className="api-error" role="alert">{error}</div>}<section className="stats-row"><div><span className="stat-label">All tasks</span><strong>{tasks.length}</strong></div><div><span className="stat-label">Due today</span><strong>{tasks.filter((task) => dueGroup(task) === 'Today').length}</strong></div><div className={overdueTasks ? 'stat-alert' : ''}><span className="stat-label">Overdue</span><strong>{overdueTasks}</strong></div><div><span className="stat-label">Completed</span><strong>{tasks.filter((task) => task.status === 'done').length}</strong></div></section><section className="workspace"><div className="workspace-toolbar"><div className="view-title"><h2>{view === 'list' ? 'Your tasks' : view === 'board' ? 'Kanban board' : 'Calendar'}</h2><span>{visibleTasks.length} showing</span></div>{view !== 'calendar' && <div className="toolbar-actions"><label className="search-box"><Search size={17} /><input value={filters.search} onChange={(event) => setFilters({ search: event.target.value })} placeholder="Search tasks..." /></label><button className={`toolbar-button ${showFilters ? 'selected' : ''}`} onClick={() => setShowFilters(!showFilters)}><SlidersHorizontal size={17} />Filters</button></div>}</div>{showFilters && <div className="filter-panel"><label>Priority<select value={filters.priority} onChange={(event) => setFilters({ priority: event.target.value as typeof filters.priority })}><option value="all">Any priority</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select></label><label>Status<select value={filters.status} onChange={(event) => setFilters({ status: event.target.value as Status | 'all' })}><option value="all">Any status</option><option value="todo">To Do</option><option value="progress">In Progress</option><option value="done">Done</option></select></label><label>Category<select value={filters.category} onChange={(event) => setFilters({ category: event.target.value })}><option value="all">Any category</option>{categories.map((category) => <option key={category} value={category}>{category}</option>)}</select></label><label>Sort<select value={filters.sort} onChange={(event) => setFilters({ sort: event.target.value as typeof filters.sort })}><option value="dueDate">Due date</option><option value="priority">Priority</option><option value="createdAt">Recently created</option></select></label><label className="checkbox-filter"><input type="checkbox" checked={filters.overdue} onChange={(event) => setFilters({ overdue: event.target.checked })} />Overdue only</label></div>}{loading ? <LoadingState /> : view === 'list' ? renderList() : view === 'board' ? <KanbanBoard tasks={visibleTasks} /> : <CalendarView tasks={visibleTasks} />}</section></main>{editingTaskId && <TaskForm task={editingTaskId === 'new' ? undefined : editingTask} onClose={() => setEditingTaskId(null)} />}</div>
+}
+
+function App() {
+  const user = useAuthStore((state) => state.user)
+  const authLoading = useAuthStore((state) => state.loading)
+  const restoreSession = useAuthStore((state) => state.restoreSession)
+  useEffect(() => { void restoreSession() }, [restoreSession])
+  if (authLoading && !user) return <LoadingState message="Restoring your session..." />
+  if (!user) return <AuthPage />
+  return <PlannerApp />
 }
 
 export default App
