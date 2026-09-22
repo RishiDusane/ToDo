@@ -1,5 +1,6 @@
 const taskForm = document.querySelector("#task-form");
 const taskInput = document.querySelector("#task-input");
+const scheduleInput = document.querySelector("#schedule-input");
 const taskList = document.querySelector("#task-list");
 const taskCount = document.querySelector("#task-count");
 const emptyState = document.querySelector("#empty-state");
@@ -14,15 +15,32 @@ function saveTasks() {
 }
 
 function visibleTasks() {
-	if (currentFilter === "active") {
-		return tasks.filter((task) => !task.completed);
+	const filteredTasks = currentFilter === "active"
+		? tasks.filter((task) => !task.completed)
+		: currentFilter === "completed"
+			? tasks.filter((task) => task.completed)
+			: tasks;
+
+	return filteredTasks.sort((firstTask, secondTask) => {
+		if (!firstTask.schedule) {
+			return 1;
+		}
+		if (!secondTask.schedule) {
+			return -1;
+		}
+		return new Date(firstTask.schedule) - new Date(secondTask.schedule);
+	});
+}
+
+function formatSchedule(schedule) {
+	if (!schedule) {
+		return "No schedule set";
 	}
 
-	if (currentFilter === "completed") {
-		return tasks.filter((task) => task.completed);
-	}
-
-	return tasks;
+	return new Intl.DateTimeFormat(undefined, {
+		dateStyle: "medium",
+		timeStyle: "short"
+	}).format(new Date(schedule));
 }
 
 function renderTasks() {
@@ -32,9 +50,12 @@ function renderTasks() {
 		const taskItem = taskTemplate.content.firstElementChild.cloneNode(true);
 		const checkbox = taskItem.querySelector(".task-checkbox");
 		const taskText = taskItem.querySelector(".task-text");
+		const taskSchedule = taskItem.querySelector(".task-schedule");
 
 		taskItem.dataset.id = task.id;
 		taskText.textContent = task.text;
+		taskSchedule.textContent = formatSchedule(task.schedule);
+		taskSchedule.dateTime = task.schedule || "";
 		checkbox.checked = task.completed;
 		taskItem.classList.toggle("completed", task.completed);
 		taskList.append(taskItem);
@@ -48,11 +69,12 @@ function renderTasks() {
 		: `No ${currentFilter} tasks to show.`;
 }
 
-function addTask(text) {
+function addTask(text, schedule) {
 	tasks.unshift({
 		id: crypto.randomUUID(),
 		text,
-		completed: false
+		completed: false,
+		schedule
 	});
 	saveTasks();
 	renderTasks();
@@ -61,13 +83,15 @@ function addTask(text) {
 taskForm.addEventListener("submit", (event) => {
 	event.preventDefault();
 	const text = taskInput.value.trim();
+	const schedule = scheduleInput.value;
 
 	if (!text) {
 		return;
 	}
 
-	addTask(text);
+	addTask(text, schedule);
 	taskInput.value = "";
+	scheduleInput.value = "";
 	taskInput.focus();
 });
 

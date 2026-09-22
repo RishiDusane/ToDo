@@ -128,6 +128,13 @@ h2 {
 	box-shadow: 0 0 0 3px rgba(38, 115, 93, 0.12);
 }
 
+.task-form input[type="datetime-local"] {
+	max-width: 210px;
+	color: #69736f;
+	font-family: Arial, sans-serif;
+	font-size: 0.85rem;
+}
+
 .primary-button,
 .filter-button,
 .icon-button {
@@ -189,6 +196,21 @@ h2 {
 	min-width: 0;
 	gap: 12px;
 	font-family: Arial, sans-serif;
+}
+
+.task-details {
+	display: grid;
+	min-width: 0;
+	gap: 4px;
+}
+
+.task-schedule {
+	color: #89928d;
+	font-size: 0.78rem;
+}
+
+.task-item.completed .task-schedule {
+	text-decoration: line-through;
 }
 
 .task-checkbox {
@@ -259,6 +281,10 @@ h2 {
 	.task-form {
 		align-items: stretch;
 		flex-direction: column;
+	}
+
+	.task-form input[type="datetime-local"] {
+		max-width: none;
 	}
 
 	.section-heading {
