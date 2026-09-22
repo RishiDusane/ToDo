@@ -9,7 +9,7 @@ services:
       MYSQL_PASSWORD: taskflow
       MYSQL_ROOT_PASSWORD: taskflow-root
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - taskflow_mysql_data:/var/lib/mysql
     healthcheck:

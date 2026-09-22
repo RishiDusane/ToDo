@@ -1,0 +1,11 @@
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { addMonths, eachDayOfInterval, endOfMonth, endOfWeek, format, isSameDay, isSameMonth, startOfMonth, startOfWeek, subMonths } from 'date-fns';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useState } from 'react';
+import { toDate } from '../utils/date';
+export default function CalendarView({ tasks }) {
+    const [month, setMonth] = useState(new Date());
+    const days = eachDayOfInterval({ start: startOfWeek(startOfMonth(month), { weekStartsOn: 1 }), end: endOfWeek(endOfMonth(month), { weekStartsOn: 1 }) });
+    const weekdayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    return _jsxs("section", { className: "calendar-view", children: [_jsxs("div", { className: "calendar-header", children: [_jsxs("div", { children: [_jsx("p", { className: "eyebrow", children: "Schedule at a glance" }), _jsx("h2", { children: format(month, 'MMMM yyyy') })] }), _jsxs("div", { className: "calendar-nav", children: [_jsx("button", { className: "icon-button", onClick: () => setMonth(subMonths(month, 1)), "aria-label": "Previous month", children: _jsx(ChevronLeft, { size: 18 }) }), _jsx("button", { className: "icon-button", onClick: () => setMonth(new Date()), children: "Today" }), _jsx("button", { className: "icon-button", onClick: () => setMonth(addMonths(month, 1)), "aria-label": "Next month", children: _jsx(ChevronRight, { size: 18 }) })] })] }), _jsx("div", { className: "calendar-grid weekday-row", children: weekdayLabels.map((label) => _jsx("span", { children: label }, label)) }), _jsx("div", { className: "calendar-grid", children: days.map((day) => { const dayTasks = tasks.filter((task) => { const dueDate = toDate(task.dueDate); return dueDate && isSameDay(dueDate, day); }); return _jsxs("div", { className: `calendar-day ${isSameMonth(day, month) ? '' : 'outside-month'}`, children: [_jsx("span", { className: "day-number", children: format(day, 'd') }), _jsx("div", { className: "day-dots", children: dayTasks.slice(0, 4).map((task) => _jsx("span", { className: `calendar-dot ${task.priority}`, title: task.title }, task.id)) }), dayTasks.length > 4 && _jsxs("small", { children: ["+", dayTasks.length - 4, " more"] })] }, day.toISOString()); }) })] });
+}

@@ -5,7 +5,7 @@ TaskFlow is a full-stack Todo Task Planner for an academic project. The React in
 ## Architecture
 
 ```text
-React + Vite + TypeScript
+React + Vite + JavaScript
         |
         | Bearer JWT / JSON REST
         v
@@ -33,10 +33,10 @@ The frontend is in the repository root. The backend is in `server/`. Users, cate
 
 ## Tech Stack
 
-- React 18, Vite, TypeScript, Tailwind CSS
+- React 18, Vite, JavaScript, Tailwind CSS
 - Zustand for frontend UI state and API-backed task state
 - React Hook Form + Zod for task validation
-- Express, TypeScript, Morgan, CORS, Zod
+- Express, JavaScript, Morgan, CORS, Zod
 - Sequelize ORM with MySQL 8 and tracked migrations
 - JWT sessions and bcrypt password hashing
 - Framer Motion, @dnd-kit/core, date-fns, and lucide-react
@@ -142,7 +142,7 @@ The login/register screen calls the public auth routes. The server hashes passwo
 
 ### Task data flow
 
-A task action starts in an existing React component such as `TaskForm`, `TaskCard`, or `KanbanBoard`. The Zustand task store calls the small `src/api/client.ts` wrapper. Express validates the request with Zod, the auth middleware identifies the user, the route checks ownership, and Sequelize writes through the model into MySQL. The response is serialized back into the frontend's stable `Task` shape. The MySQL volume means data survives API restarts.
+A task action starts in an existing React component such as `TaskForm`, `TaskCard`, or `KanbanBoard`. The Zustand task store calls the small `src/api/client.js` wrapper. Express validates the request with Zod, the auth middleware identifies the user, the route checks ownership, and Sequelize writes through the model into MySQL. The response is serialized back into the frontend's stable task shape. The MySQL volume means data survives API restarts.
 
 ### Schema and relationships
 
@@ -152,11 +152,10 @@ Users own categories and tasks. Tasks optionally belong to a category and own su
 
 ```text
 src/
-  api/       Typed frontend REST client
+  api/       Frontend REST client
   components/ Auth, task editor/cards, sidebar, board, calendar, loading UI
   store/     Auth and API-backed Zustand stores
   utils/     Date grouping and formatting
-  types.ts   Shared frontend task types
 server/
   src/config/ Database and environment setup
   src/middleware/ Auth and centralized errors

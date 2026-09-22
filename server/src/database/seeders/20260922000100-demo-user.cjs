@@ -14,7 +14,7 @@ module.exports = {
     const studyId = categories.find((category) => category.name === 'Study').id
     const personalId = categories.find((category) => category.name === 'Personal').id
     await queryInterface.bulkInsert('tasks', [
-      { user_id: userId, category_id: studyId, title: 'Review database normalization', description: 'Prepare three examples for the seminar.', due_date: new Date().toISOString().slice(0, 10), due_time: '17:00:00', priority: 'high', status: 'progress', created_at: new Date(), updated_at: new Date() },
+      { user_id: userId, category_id: studyId, title: 'Review database normalization', description: 'Prepare three examples for the seminar.', due_date: new Date().toISOString().slice(0, 10), due_time: '17:00:00', priority: 'high', status: 'in_progress', created_at: new Date(), updated_at: new Date() },
       { user_id: userId, category_id: personalId, title: 'Plan weekend groceries', description: 'Keep the list short and practical.', due_date: new Date(Date.now() + 86400000).toISOString().slice(0, 10), due_time: null, priority: 'low', status: 'todo', created_at: new Date(), updated_at: new Date() },
     ])
   },
