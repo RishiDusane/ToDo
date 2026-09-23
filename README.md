@@ -3,7 +3,7 @@
 TaskFlow is a full-stack Todo Task Planner for an academic project. The React interface keeps the calm list, Kanban, and calendar workflows from the earlier version, while an Express API and MySQL database now provide authenticated, durable persistence.
 
 ## Architecture
-
+    
 ```text
 React + Vite + JavaScript
         |
