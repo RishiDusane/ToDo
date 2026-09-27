@@ -17,6 +17,15 @@ module.exports = {
       { user_id: userId, category_id: studyId, title: 'Review database normalization', description: 'Prepare three examples for the seminar.', due_date: new Date().toISOString().slice(0, 10), due_time: '17:00:00', priority: 'high', status: 'in_progress', created_at: new Date(), updated_at: new Date() },
       { user_id: userId, category_id: personalId, title: 'Plan weekend groceries', description: 'Keep the list short and practical.', due_date: new Date(Date.now() + 86400000).toISOString().slice(0, 10), due_time: null, priority: 'low', status: 'todo', created_at: new Date(), updated_at: new Date() },
     ])
+    const [tasks] = await queryInterface.sequelize.query(`SELECT id, title FROM tasks WHERE user_id = ${userId}`)
+    const studyTask = tasks.find((t) => t.title === 'Review database normalization')
+    if (studyTask) {
+      await queryInterface.bulkInsert('subtasks', [
+        { task_id: studyTask.id, title: 'First normal form (1NF) examples', is_complete: true, position: 0, created_at: new Date(), updated_at: new Date() },
+        { task_id: studyTask.id, title: 'Second normal form (2NF) rules', is_complete: false, position: 1, created_at: new Date(), updated_at: new Date() },
+        { task_id: studyTask.id, title: 'Third normal form (3NF) and BCNF differences', is_complete: false, position: 2, created_at: new Date(), updated_at: new Date() },
+      ])
+    }
   },
   async down(queryInterface) {
     const [users] = await queryInterface.sequelize.query("SELECT id FROM users WHERE email = 'demo@taskflow.local' LIMIT 1")

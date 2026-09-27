@@ -10,7 +10,17 @@ import authRouter from './routes/auth.js';
 import categoryRouter from './routes/categories.js';
 import taskRouter from './routes/tasks.js';
 const app = express();
-app.use(cors({ origin: env.FRONTEND_ORIGIN }));
+const allowedOrigins = [env.FRONTEND_ORIGIN, 'http://localhost:5173', 'http://127.0.0.1:5173'];
+app.use(cors({
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin) || origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
+            callback(null, true);
+        } else {
+            callback(null, false);
+        }
+    },
+    credentials: true,
+}));
 app.use(express.json({ limit: '1mb' }));
 app.use(morgan('dev'));
 app.get('/health', (_request, response) => response.json({ status: 'ok' }));

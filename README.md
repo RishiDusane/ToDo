@@ -46,7 +46,7 @@ The frontend is in the repository root. The backend is in `server/`. Users, cate
 ### Requirements
 
 - Node.js 18+
-- Docker Desktop with Docker Compose
+- MySQL 8 (local installation or Docker Compose)
 
 ### Install dependencies
 
@@ -54,23 +54,38 @@ From the repository root:
 
 ```bash
 npm install
-cd server
-npm install
-cd ..
+npm --prefix server install
 ```
 
 Create the backend environment file:
 
 ```bash
-copy server\\.env.example server\\.env
+copy server\.env.example server\.env
 ```
 
-On macOS/Linux, use `cp server/.env.example server/.env` instead. The Docker Compose defaults already match the example values. For a real deployment, replace `JWT_SECRET` with a long random value.
+On macOS/Linux, use `cp server/.env.example server/.env` instead. Configure your MySQL credentials in `server/.env`:
 
-The frontend reads `VITE_API_URL` when provided and otherwise uses `http://localhost:4000/api`.
+```env
+PORT=4000
+FRONTEND_ORIGIN=http://localhost:5173
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=your_mysql_password
+DB_NAME=taskflow
+JWT_SECRET=development-taskflow-secret-super-safe-key-32chars
+```
 
-### Start MySQL and migrate
+### Create Database & Migrate
 
+If using local MySQL:
+```bash
+mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS taskflow CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+npm run server:migrate
+npm run server:seed
+```
+
+If using Docker Compose:
 ```bash
 docker compose up -d
 npm run server:migrate
@@ -84,7 +99,13 @@ The seed creates this demo account:
 
 ### Run development servers
 
-Use two terminals:
+Start both backend and frontend concurrently:
+
+```bash
+npm start
+```
+
+Or run them in separate terminals:
 
 ```bash
 npm run server:dev

@@ -74,4 +74,5 @@ export const useTaskStore = create((set) => ({
             throw error;
         }
     },
+    resetTasks: () => set({ tasks: [], categories: [], error: null, editingTaskId: null }),
 }));

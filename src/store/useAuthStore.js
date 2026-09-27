@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { authApi, TOKEN_KEY } from '../api/client';
+import { useTaskStore } from './useTaskStore';
 function saveSession(token, user) {
     localStorage.setItem(TOKEN_KEY, token);
     return { user, loading: false, error: null };
@@ -42,5 +43,9 @@ export const useAuthStore = create((set) => ({
             throw error;
         }
     },
-    logout: () => { localStorage.removeItem(TOKEN_KEY); set({ user: null, loading: false, error: null }); },
+    logout: () => {
+        localStorage.removeItem(TOKEN_KEY);
+        useTaskStore.getState().resetTasks();
+        set({ user: null, loading: false, error: null });
+    },
 }));

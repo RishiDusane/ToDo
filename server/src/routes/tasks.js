@@ -33,17 +33,24 @@ const include = [{ model: Category }, { model: Subtask }];
 async function ownedTask(userId, taskId) {
     return Task.findOne({ where: { id: taskId, userId }, include });
 }
-async function replaceSubtasks(taskId, values) {
-    await Subtask.destroy({ where: { taskId } });
+async function replaceSubtasks(taskId, values, transaction) {
+    const options = transaction ? { transaction } : {};
+    await Subtask.destroy({ where: { taskId }, ...options });
     if (values.length)
-        await Subtask.bulkCreate(values.map((subtask, position) => ({ taskId, title: subtask.title, isComplete: subtask.completed, position })));
+        await Subtask.bulkCreate(values.map((subtask, position) => ({ taskId, title: subtask.title, isComplete: subtask.completed, position })), options);
 }
 router.get('/', async (request, response, next) => {
     try {
-        const query = z.object({ status: z.enum(['todo', 'in_progress', 'done']).optional(), priority: prioritySchema.optional(), category: z.string().optional(), search: z.string().optional(), sortBy: z.enum(['dueDate', 'priority', 'createdAt']).default('dueDate') }).parse(request.query);
+        const query = z.object({
+            status: z.enum(['todo', 'progress', 'in_progress', 'done']).optional(),
+            priority: prioritySchema.optional(),
+            category: z.string().optional(),
+            search: z.string().optional(),
+            sortBy: z.enum(['dueDate', 'priority', 'createdAt']).default('dueDate')
+        }).parse(request.query);
         const where = { userId: request.user.id };
         if (query.status)
-            where.status = query.status;
+            where.status = query.status === 'progress' ? 'in_progress' : query.status;
         if (query.priority)
             where.priority = query.priority;
         if (query.search)
@@ -65,20 +72,23 @@ router.get('/:id', async (request, response, next) => {
         return next(error);
     }
 });
-router.post('/', async (request, response) => {
+router.post('/', async (request, response, next) => {
     try {
         const input = taskSchema.parse(request.body);
         const category = await categoryFor(request.user.id, input.category);
         const task = await sequelize.transaction(async (transaction) => {
             const created = await Task.create({ userId: request.user.id, categoryId: category.id, title: input.title, description: input.description, ...splitDueDate(input.dueDate), priority: input.priority, status: input.status === 'progress' ? 'in_progress' : input.status }, { transaction });
-            await replaceSubtasks(created.id, input.subtasks);
+            await replaceSubtasks(created.id, input.subtasks, transaction);
             return created;
         });
         const fullTask = await ownedTask(request.user.id, String(task.id));
         return response.status(201).json({ task: serializeTask(fullTask) });
     }
     catch (error) {
-        return sendValidationError(response, error);
+        if (error instanceof z.ZodError) {
+            return sendValidationError(response, error);
+        }
+        return next(error);
     }
 });
 router.put('/:id', async (request, response, next) => {
@@ -99,7 +109,7 @@ router.put('/:id', async (request, response, next) => {
         await sequelize.transaction(async (transaction) => {
             await task.update(updates, { transaction });
             if (input.subtasks)
-                await replaceSubtasks(task.id, input.subtasks);
+                await replaceSubtasks(task.id, input.subtasks, transaction);
         });
         const fullTask = await ownedTask(request.user.id, request.params.id);
         return response.json({ task: serializeTask(fullTask) });

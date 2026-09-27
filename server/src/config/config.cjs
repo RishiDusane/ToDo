@@ -2,6 +2,8 @@ const path = require('path')
 const dotenv = require('dotenv')
 dotenv.config({ path: path.resolve(process.cwd(), 'server/.env') })
 dotenv.config({ path: path.resolve(process.cwd(), '.env') })
+dotenv.config({ path: path.resolve(__dirname, '../../.env') })
+dotenv.config({ path: path.resolve(__dirname, '../.env') })
 
 const base = {
   username: process.env.DB_USER || 'taskflow',
