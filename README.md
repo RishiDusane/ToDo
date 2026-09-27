@@ -11,7 +11,10 @@ List view · Kanban board · Calendar — backed by a real REST API and MySQL da
 [![Express](https://img.shields.io/badge/Express-black?logo=express)](https://expressjs.com/)
 [![MySQL](https://img.shields.io/badge/MySQL-8-4479A1?logo=mysql&logoColor=white)](https://www.mysql.com/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
+[![Deployed on Vercel](https://img.shields.io/badge/Deployed-Vercel-black?logo=vercel&logoColor=white)](https://to-do-mu-blond-71.vercel.app/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](#license)
+
+### 🔗 [**Live Demo**](https://to-do-mu-blond-71.vercel.app/) — try it in your browser, no setup required
 
 </div>
 
@@ -36,6 +39,8 @@ It started as a purely client-side React app and was deliberately re-architected
 | 📊 **Progress** | Completion tracking and overdue highlighting |
 | 🌗 **Theming** | Light/dark mode, fully responsive layout |
 | 📤 **Data portability** | JSON export and API-backed import |
+
+> 💡 Registration takes a few seconds — create an account on the live demo and jump straight into the Kanban board or calendar.
 
 ## 🖼️ Screenshots
 
@@ -95,6 +100,8 @@ The frontend lives at the repository root; the backend lives in `server/`. Users
 **Backend** — Node.js, Express, Morgan, CORS, Zod, Sequelize ORM, JWT, bcrypt
 
 **Database & Infra** — MySQL 8, Docker Compose, tracked Sequelize migrations & seeders
+
+**Deployment** — Live on [Vercel](https://to-do-mu-blond-71.vercel.app/)
 
 ## 🚀 Getting Started
 
